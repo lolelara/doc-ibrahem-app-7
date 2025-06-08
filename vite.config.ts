@@ -1,17 +1,28 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { fileURLToPath, URL } from 'node:url'; // For path resolution in ES modules
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  resolve: { // Add resolve configuration
+    alias: {
+      '~': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  server: {
+    // Optional: Configure proxy for API requests during development
+    // to mimic Netlify redirects. This is only for `vite dev`.
+    // In production, Netlify handles this with netlify.toml.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8888/.netlify/functions', // Netlify Dev default port
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
-});
+    },
+  },
+  build: {
+    outDir: 'dist', // Ensure this matches Netlify's publish directory
+  },
+})
